@@ -7,7 +7,9 @@ linux-firmware
 mkinitcpio
 
 # ── ZFS ────────────────────────────────────────────────────────────────────────
-zfs-cachyos
+# zfs-dkms builds against whichever kernel is installed (linux-cachyos here)
+# and is in the standard extra repo — no CachyOS-specific package name needed
+zfs-dkms
 zfs-utils
 
 # ── ZFSBootMenu (boot environment manager) ─────────────────────────────────────
@@ -51,7 +53,7 @@ hyprlock
 hypridle
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
-xwayland
+xorg-xwayland
 wayland-protocols
 
 # ── Status bar & widgets ───────────────────────────────────────────────────────
@@ -124,8 +126,8 @@ vulkan-icd-loader
 vulkan-intel
 vulkan-radeon
 libva
-libva-intel-driver
-libva-mesa-driver
+# libva drivers omitted: in CachyOS, libva-mesa-driver is bundled inside mesa
+# and listing it separately triggers an interactive multi-provider prompt
 
 # ── Bluetooth ──────────────────────────────────────────────────────────────────
 bluez
