@@ -129,7 +129,7 @@ madOS/
 │       ├── zfs-setup.sh          # partitioning + pool + datasets
 │       └── ml4w-setup.sh         # dotfiles + ML4W
 ├── assets/
-│   ├── madOS-CD-Logo.png         # ← place your PNG here
+│   ├── madOS-cd-logo.png         # ← place your PNG here
 │   └── tui-demo.svg
 ├── config/
 │   └── defaults.conf             # dotfiles URL, hostname, etc.

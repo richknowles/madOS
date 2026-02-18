@@ -73,14 +73,9 @@ jobs:
           pacman-key --populate cachyos || true
 
           # Append CachyOS repos to pacman.conf
-          cat >> /etc/pacman.conf <<'EOF'
-
-          [cachyos]
-          Include = /etc/pacman.d/cachyos-mirrorlist
-
-          [cachyos-v3]
-          Include = /etc/pacman.d/cachyos-v3-mirrorlist
-          EOF
+          # (printf avoids heredoc indentation issues inside YAML run blocks)
+          printf '\n[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n\n[cachyos-v3]\nInclude = /etc/pacman.d/cachyos-v3-mirrorlist\n' \
+            >> /etc/pacman.conf
 
           # Refresh package databases
           pacman -Sy --noconfirm || true
