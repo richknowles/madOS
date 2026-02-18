@@ -1,7 +1,7 @@
 <div align="center">
 
-<!-- Drop madOS-CD-Logo.png into assets/ and it appears here automatically -->
-<img src="assets/madOS-CD-Logo.png" alt="madOS" width="340"/>
+<!-- Drop madOS-cd-logo.png into assets/ and it appears here automatically -->
+<img src="assets/madOS-cd-logo.png" alt="madOS" width="340"/>
 
 <br/>
 
@@ -129,7 +129,7 @@ madOS/
 │       ├── zfs-setup.sh          # partitioning + pool + datasets
 │       └── ml4w-setup.sh         # dotfiles + ML4W
 ├── assets/
-│   ├── madOS-CD-Logo.png         # ← place your PNG here
+│   ├── madOS-cd-logo.png         # ← place your PNG here
 │   └── tui-demo.svg
 ├── config/
 │   └── defaults.conf             # dotfiles URL, hostname, etc.
