@@ -76,6 +76,14 @@ yay -S --noconfirm --needed ml4w-hyprland 2>/dev/null \
     || yay -S --noconfirm --needed ml4w-dotfiles 2>/dev/null \
     || echo "[ML4W] WARNING: ml4w AUR package not found — check package name at aur.archlinux.org"
 
+# ── ArcStarry cursor theme (AUR — used by cursor.conf: setcursor ArcStarry-cursors 24) ──
+echo "[ML4W] Installing ArcStarry cursor theme from AUR..."
+yay -S --noconfirm --needed arcstarry-cursors 2>/dev/null \
+    || yay -S --noconfirm --needed xcursor-arcstarry 2>/dev/null \
+    || yay -S --noconfirm --needed arcstarry 2>/dev/null \
+    || echo "[ML4W] NOTE: ArcStarry cursor not found under known AUR names." \
+       "Hyprctl will set it on first login if the theme is installed elsewhere."
+
 # ── Configure SDDM to default to Hyprland ─────────────────────────────────────
 mkdir -p ~/.config/sddm
 cat > ~/.config/sddm/sddm.conf.d/autologin.conf <<EOF

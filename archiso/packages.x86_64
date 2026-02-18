@@ -126,8 +126,22 @@ vulkan-icd-loader
 vulkan-intel
 vulkan-radeon
 libva
-# libva drivers omitted: in CachyOS, libva-mesa-driver is bundled inside mesa
-# and listing it separately triggers an interactive multi-provider prompt
+intel-media-driver
+# libva-mesa-driver omitted: bundled inside mesa in CachyOS (avoids multi-provider prompt)
+
+# ── NVIDIA (Quadro T1000 / Turing — open kernel module for linux-cachyos) ──────
+linux-cachyos-nvidia-open
+nvidia-utils
+nvidia-settings
+lib32-nvidia-utils
+egl-wayland
+opencl-nvidia
+
+# ── Cursor themes ───────────────────────────────────────────────────────────────
+# ArcStarry-cursors (used by dotfiles cursor.conf) is AUR-only;
+# installed via yay in ml4w-setup.sh
+hyprcursor
+xcursor-themes
 
 # ── Bluetooth ──────────────────────────────────────────────────────────────────
 bluez
