@@ -9,7 +9,7 @@ iso_application="madOS — Immutable CachyOS with ZFS and ML4W Hyprland"
 iso_version="$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)"
 install_dir="arch"
 buildmodes=('iso')
-bootmodes=('uefi-x64.systemd-boot.esp')
+bootmodes=('uefi.systemd-boot')
 arch="x86_64"
 pacman_conf="pacman.conf"
 airootfs_image_type="squashfs"
