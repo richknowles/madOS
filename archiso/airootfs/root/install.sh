@@ -161,7 +161,8 @@ install_base() {
     log "Installing CachyOS base system..."
     pacstrap -K /mnt \
         base base-devel linux-cachyos linux-cachyos-headers linux-firmware \
-        zfs-cachyos zfs-utils \
+        linux-cachyos-nvidia-open nvidia-utils nvidia-settings egl-wayland opencl-nvidia \
+        zfs-dkms zfs-utils \
         networkmanager sudo git yay \
         grub efibootmgr dosfstools \
         zsh fish starship \
@@ -172,6 +173,7 @@ install_base() {
         grim slurp wl-clipboard \
         pipewire pipewire-alsa pipewire-pulse wireplumber \
         sddm noto-fonts noto-fonts-emoji ttf-jetbrains-mono-nerd \
+        intel-media-driver hyprcursor xcursor-themes \
         python python-pip curl wget rsync openssh \
         polkit polkit-kde-agent \
         2>&1 | tee /tmp/pacstrap.log \
@@ -227,6 +229,40 @@ mkinitcpio -P
 CHROOT
 }
 
+# ── NVIDIA configuration ──────────────────────────────────────────────────────
+configure_nvidia() {
+    log "Configuring NVIDIA DRM modesetting and Wayland environment..."
+
+    # Tell ZFSBootMenu to pass nvidia-drm.modeset=1 to every boot environment
+    zfs set org.zfsbootmenu:commandline="rw quiet loglevel=0 nvidia-drm.modeset=1" \
+        "${ZFS_POOL_NAME}/ROOT/arch" 2>/dev/null || true
+
+    arch-chroot /mnt bash -euo pipefail <<CHROOT
+# DRM modesetting — required for Wayland; fbdev=1 keeps TTY output working
+echo "options nvidia-drm modeset=1 fbdev=1" > /etc/modprobe.d/nvidia.conf
+
+# Wayland environment variables (mirrors dotfiles nvidia.conf)
+mkdir -p /etc/environment.d
+cat > /etc/environment.d/99-nvidia-wayland.conf <<ENV
+GBM_BACKEND=nvidia-drm
+LIBVA_DRIVER_NAME=nvidia
+SDL_VIDEODRIVER=wayland
+__GLX_VENDOR_LIBRARY_NAME=nvidia
+__NV_PRIME_RENDER_OFFLOAD=1
+__VK_LAYER_NV_optimus=NVIDIA_only
+WLR_NO_HARDWARE_CURSORS=1
+WLR_RENDERER_ALLOW_SOFTWARE=1
+MOZ_DISABLE_RDD_SANDBOX=1
+EGL_PLATFORM=wayland
+ENV
+
+# Enable nvidia-persistenced if available (keeps GPU state between sessions)
+systemctl enable nvidia-persistenced 2>/dev/null || true
+CHROOT
+
+    success "NVIDIA configured."
+}
+
 # ── User dotfiles + ML4W ──────────────────────────────────────────────────────
 setup_dotfiles_chroot() {
     log "Setting up dotfiles and ML4W in chroot..."
@@ -264,7 +300,7 @@ grub-install --target=x86_64-efi \
     --bootloader-id=GRUB \
     --recheck
 # Enable ZFS support in GRUB
-echo 'GRUB_CMDLINE_LINUX="zfs.zfs_arc_max=8589934592"' >> /etc/default/grub
+echo 'GRUB_CMDLINE_LINUX="zfs.zfs_arc_max=8589934592 nvidia-drm.modeset=1"' >> /etc/default/grub
 echo 'GRUB_PRELOAD_MODULES="zfs part_gpt"' >> /etc/default/grub
 grub-mkconfig -o /boot/grub/grub.cfg
 CHROOT
@@ -312,6 +348,9 @@ main() {
 
     # System configuration in chroot
     configure_system
+
+    # NVIDIA DRM + Wayland environment
+    configure_nvidia
 
     # Dotfiles + ML4W
     setup_dotfiles_chroot

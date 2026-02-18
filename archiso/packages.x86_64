@@ -7,7 +7,9 @@ linux-firmware
 mkinitcpio
 
 # ── ZFS ────────────────────────────────────────────────────────────────────────
-zfs-cachyos
+# zfs-dkms builds against whichever kernel is installed (linux-cachyos here)
+# and is in the standard extra repo — no CachyOS-specific package name needed
+zfs-dkms
 zfs-utils
 
 # ── ZFSBootMenu (boot environment manager) ─────────────────────────────────────
@@ -31,6 +33,7 @@ dhcpcd
 parted
 gptfdisk
 util-linux
+iptables-nft
 
 # ── Arch install tools ─────────────────────────────────────────────────────────
 arch-install-scripts
@@ -51,7 +54,7 @@ hyprlock
 hypridle
 xdg-desktop-portal-hyprland
 xdg-desktop-portal-gtk
-xwayland
+xorg-xwayland
 wayland-protocols
 
 # ── Status bar & widgets ───────────────────────────────────────────────────────
@@ -124,8 +127,23 @@ vulkan-icd-loader
 vulkan-intel
 vulkan-radeon
 libva
-libva-intel-driver
-libva-mesa-driver
+intel-media-driver
+# libva-mesa-driver omitted: bundled inside mesa in CachyOS (avoids multi-provider prompt)
+
+# ── NVIDIA (Quadro T1000 / Turing — open kernel module for linux-cachyos) ──────
+linux-cachyos-nvidia-open
+nvidia-utils
+nvidia-settings
+# lib32-nvidia-utils omitted: requires lib32-libglvnd from [multilib] (not in pacman.conf);
+# not needed in live ISO — install post-boot if running 32-bit apps / Wine / Steam
+egl-wayland
+opencl-nvidia
+
+# ── Cursor themes ───────────────────────────────────────────────────────────────
+# ArcStarry-cursors (used by dotfiles cursor.conf) is AUR-only;
+# installed via yay in ml4w-setup.sh
+hyprcursor
+xcursor-themes
 
 # ── Bluetooth ──────────────────────────────────────────────────────────────────
 bluez
