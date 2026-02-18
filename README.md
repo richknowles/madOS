@@ -1,143 +1,138 @@
-# madOS &nbsp; [![Build madOS ISO](https://github.com/richknowles/madOS/actions/workflows/build.yml/badge.svg)](https://github.com/richknowles/madOS/actions/workflows/build.yml)
+<div align="center">
 
-**Immutable CachyOS with ZFS boot environments and ML4W Hyprland.**
+<!-- Drop madOS-CD-Logo.png into assets/ and it appears here automatically -->
+<img src="assets/madOS-CD-Logo.png" alt="madOS" width="340"/>
 
-madOS is a custom CachyOS live ISO that installs an immutable-style Arch Linux system using ZFS as the root filesystem. Rollback to any previous system state in seconds — right from the bootloader. ML4W + Hyprland + your personal dotfiles are wired in from the start.
+<br/>
+
+[![Build madOS ISO](https://github.com/richknowles/madOS/actions/workflows/build.yml/badge.svg)](https://github.com/richknowles/madOS/actions/workflows/build.yml)
+
+</div>
 
 ---
 
-## What's inside
+My personal Linux setup, packaged as a bootable ISO you can drop on any machine and be home in under 30 minutes. Powered by CachyOS, rooted on ZFS, and dressed in ML4W Hyprland straight from my own dotfiles.
 
-| Layer | Technology |
+The trick: **ZFS boot environments**. Before any update, snapshot the system. If it goes sideways, reboot and pick the snapshot — no recovery USBs, no reinstalls, no prayer. The bootloader does it.
+
+---
+
+## The stack
+
+| | |
 |---|---|
-| Base distro | [CachyOS](https://cachyos.org) (optimized Arch Linux) |
-| Filesystem | [OpenZFS](https://openzfs.org) with dataset-per-concern layout |
-| Bootloader | [ZFSBootMenu](https://zfsbootmenu.org) — snapshot-aware boot menu |
-| Desktop | [Hyprland](https://hyprland.org) via [ML4W](https://github.com/mylinuxforwork/dotfiles) |
-| Dotfiles | [richknowles/.dotfiles](https://github.com/richknowles/.dotfiles) |
-| Installer | Custom bash TUI (dialog-based), launches automatically at boot |
+| **Base** | [CachyOS](https://cachyos.org) — Arch Linux, performance-optimized |
+| **Filesystem** | [OpenZFS](https://openzfs.org) — snapshots, compression, no fuss |
+| **Bootloader** | [ZFSBootMenu](https://zfsbootmenu.org) — pick a snapshot right at boot |
+| **Desktop** | [Hyprland](https://hyprland.org) via [ML4W](https://github.com/mylinuxforwork/dotfiles) |
+| **Dotfiles** | [richknowles/.dotfiles](https://github.com/richknowles/.dotfiles) — Fish, Waybar, Kitty, the works |
+| **Installer** | Custom `dialog` TUI — boots straight into it, zero fuss |
 
 ---
 
-## Immutability model
+## Installer
 
-madOS uses **ZFS boot environments** for rollback — the same concept as Fedora Silverblue/Kinoite, but on ZFS instead of ostree.
+Boot the ISO. The installer comes up automatically. Answer six questions and walk away.
+
+<div align="center">
+<img src="assets/tui-demo.svg" alt="madOS TUI installer walkthrough" width="720"/>
+</div>
+
+**What it asks:**
+- Which disk to use (shows model + size, you just pick)
+- Hostname, username, passwords
+- Timezone
+- Your dotfiles repo URL *(pre-filled — change it to yours or leave it)*
+- GitHub token *(only if your dotfiles are private — leave blank otherwise)*
+
+**What it does next, without further input:**
+1. GPT partition table — 512 MB EFI, rest goes to ZFS
+2. ZFS pool + datasets (system, home, logs, cache — all separate)
+3. CachyOS base install via `pacstrap`
+4. ZFSBootMenu as the EFI bootloader
+5. Clones dotfiles → runs `install.sh` → runs `scripts/install-packages.sh`
+6. Installs ML4W Hyprland from AUR
+7. Takes the first snapshot (`baseline-ml4w`)
+8. Reboots
+
+First boot drops you into ZFSBootMenu, then SDDM, then ML4W Welcome to finish the Hyprland config.
+
+---
+
+## How rollback works
 
 ```
 zroot/
-├── ROOT/
-│   └── arch          ← system root — snapshotted before every update
-├── data/
-│   └── home          ← user home — survives root rollbacks
-└── var/
-    ├── log           ← logs
-    └── cache         ← pacman cache (excluded from snapshots)
+├── ROOT/arch        ← everything pacman touches. snapshotted before updates.
+├── data/home        ← your files. survives any root rollback.
+└── var/log          ← logs
+    var/cache        ← package cache (not snapshotted)
 ```
 
-**Workflow:**
 ```bash
-# Before updating the system:
-sudo zfs snapshot zroot/ROOT/arch@pre-update-$(date +%Y%m%d)
+# Step 1 — before you update anything:
+sudo zfs snapshot zroot/ROOT/arch@before-$(date +%Y%m%d)
 
-# Apply updates normally:
+# Step 2 — update as normal:
 sudo pacman -Syu
 
-# If something breaks — reboot and select the snapshot in ZFSBootMenu.
-# No special tooling required.
+# Step 3 — if it breaks, just reboot.
+# ZFSBootMenu lists your snapshots. Arrow key, Enter. Done.
 ```
+
+No extra tooling. No container runtime. No learning curve. It's just ZFS.
 
 ---
 
-## Installation
+## Get the ISO
 
-### 1. Get the ISO
+**Latest build** — [GitHub Actions → most recent workflow run → Artifacts](https://github.com/richknowles/madOS/actions/workflows/build.yml)
 
-Download the latest ISO from [GitHub Actions artifacts](https://github.com/richknowles/madOS/actions/workflows/build.yml)
-or from [Releases](https://github.com/richknowles/madOS/releases) (tagged builds only).
-
-### 2. Flash to USB
+**Releases** — tagged commits publish to [Releases](https://github.com/richknowles/madOS/releases) automatically.
 
 ```bash
+# Flash to USB (replace /dev/sdX with your drive):
 dd if=madOS-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
 ```
 
-### 3. Boot and install
-
-Boot from the USB. The TUI installer launches automatically on `tty1` and prompts for:
-
-- **Target disk** — shown as a list, all data will be erased
-- **Hostname** and **username**
-- **Timezone**
-- **Dotfiles repo URL** — pre-filled as `https://github.com/richknowles/.dotfiles`
-- **GitHub token** — optional, leave blank for public repos
-
-The installer then:
-1. Partitions the disk (GPT: EFI + ZFS)
-2. Creates the ZFS pool and datasets
-3. Installs CachyOS base system via `pacstrap`
-4. Configures ZFSBootMenu as the bootloader
-5. Clones your dotfiles and runs `install.sh` + `scripts/install-packages.sh`
-6. Installs ML4W Hyprland from AUR
-7. Takes a baseline ZFS snapshot
-8. Reboots
-
-### 4. First boot
-
-ZFSBootMenu appears — press Enter to boot. Log in, and ML4W Welcome launches to finish Hyprland configuration.
-
 ---
 
-## Building the ISO locally
+## Build it yourself
 
-Requires an Arch Linux system with `archiso` installed.
+Needs Arch Linux (or CachyOS) with `archiso` installed.
 
 ```bash
 git clone https://github.com/richknowles/madOS
 cd madOS
 
-# Optional: override defaults
+# Defaults are in config/defaults.conf
+# Override any of them by copying to the live image root:
 cp config/defaults.conf archiso/airootfs/root/config.conf
-# Edit archiso/airootfs/root/config.conf as needed
 
-# Build (requires root)
-sudo mkarchiso -v -w /tmp/mados-work -o /tmp/mados-out archiso/
-
-# Flash
-dd if=/tmp/mados-out/madOS-*.iso of=/dev/sdX bs=4M status=progress
+sudo mkarchiso -v -w /tmp/work -o /tmp/out archiso/
 ```
 
----
-
-## CI/CD
-
-GitHub Actions builds the ISO automatically:
-- On every push to `main` (excluding docs changes)
-- Weekly on Sundays at 06:00 UTC
-- On manual trigger via the Actions UI
-
-ISO artifacts are retained for 14 days. Tag a commit (`git tag v1.0 && git push --tags`) to create a permanent GitHub Release.
+The GitHub Actions workflow does the same thing in an Arch container — builds on every push to `main`, weekly on Sundays, and on demand. Artifacts stick around for 14 days.
 
 ---
 
-## Repository structure
+## What's in the repo
 
 ```
 madOS/
 ├── archiso/
-│   ├── profiledef.sh              # archiso profile definition
-│   ├── packages.x86_64            # packages included in live ISO
-│   ├── pacman.conf                # pacman config with CachyOS repos
-│   └── airootfs/
-│       ├── etc/
-│       │   ├── motd               # live environment welcome message
-│       │   └── systemd/system/
-│       │       └── madOS-installer.service
-│       └── root/
-│           ├── install.sh         # main TUI installer
-│           ├── zfs-setup.sh       # ZFS partitioning + pool/dataset creation
-│           └── ml4w-setup.sh      # dotfiles clone + ML4W setup
+│   ├── profiledef.sh
+│   ├── packages.x86_64          # live ISO packages
+│   ├── pacman.conf               # CachyOS repos included
+│   └── airootfs/root/
+│       ├── install.sh            # the installer
+│       ├── zfs-setup.sh          # partitioning + pool + datasets
+│       └── ml4w-setup.sh         # dotfiles + ML4W
+├── assets/
+│   ├── madOS-CD-Logo.png         # ← place your PNG here
+│   └── tui-demo.svg
 ├── config/
-│   └── defaults.conf              # installer defaults (dotfiles URL, etc.)
+│   └── defaults.conf             # dotfiles URL, hostname, etc.
 └── .github/workflows/
-    └── build.yml                  # GitHub Actions ISO build pipeline
+    └── build.yml
 ```
