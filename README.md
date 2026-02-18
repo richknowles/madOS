@@ -1,7 +1,7 @@
 <div align="center">
 
-<!-- Drop madOS-cd-logo.png into assets/ and it appears here automatically -->
-<img src="assets/madOS-cd-logo.png" alt="madOS" width="340"/>
+<!-- Drop madOS-CD-Logo.png into assets/ and it appears here automatically -->
+<img src="assets/madOS-cd-logo.png" alt="madOS" width="680"/>
 
 <br/>
 
