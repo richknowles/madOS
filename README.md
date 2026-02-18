@@ -1,43 +1,138 @@
-# madOS &nbsp; [![bluebuild build badge](https://github.com/richknowles/mados/actions/workflows/build.yml/badge.svg)](https://github.com/richknowles/mados/actions/workflows/build.yml)
+<div align="center">
 
-See the [BlueBuild docs](https://blue-build.org/how-to/setup/) for quick setup instructions for setting up your own repository based on this template.
+<!-- Drop madOS-CD-Logo.png into assets/ and it appears here automatically -->
+<img src="assets/madOS-CD-Logo.png" alt="madOS" width="340"/>
 
-After setup, it is recommended you update this README to describe your custom image.
+<br/>
 
-## Installation
+[![Build madOS ISO](https://github.com/richknowles/madOS/actions/workflows/build.yml/badge.svg)](https://github.com/richknowles/madOS/actions/workflows/build.yml)
 
-> [!WARNING]  
-> [This is an experimental feature](https://www.fedoraproject.org/wiki/Changes/OstreeNativeContainerStable), try at your own discretion.
+</div>
 
-To rebase an existing atomic Fedora installation to the latest build:
+---
 
-- First rebase to the unsigned image, to get the proper signing keys and policies installed:
-  ```
-  rpm-ostree rebase ostree-unverified-registry:ghcr.io/richknowles/mados:latest
-  ```
-- Reboot to complete the rebase:
-  ```
-  systemctl reboot
-  ```
-- Then rebase to the signed image, like so:
-  ```
-  rpm-ostree rebase ostree-image-signed:docker://ghcr.io/richknowles/mados:latest
-  ```
-- Reboot again to complete the installation
-  ```
-  systemctl reboot
-  ```
+My personal Linux setup, packaged as a bootable ISO you can drop on any machine and be home in under 30 minutes. Powered by CachyOS, rooted on ZFS, and dressed in ML4W Hyprland straight from my own dotfiles.
 
-The `latest` tag will automatically point to the latest build. That build will still always use the Fedora version specified in `recipe.yml`, so you won't get accidentally updated to the next major version.
+The trick: **ZFS boot environments**. Before any update, snapshot the system. If it goes sideways, reboot and pick the snapshot — no recovery USBs, no reinstalls, no prayer. The bootloader does it.
 
-## ISO
+---
 
-If build on Fedora Atomic, you can generate an offline ISO with the instructions available [here](https://blue-build.org/learn/universal-blue/#fresh-install-from-an-iso). These ISOs cannot unfortunately be distributed on GitHub for free due to large sizes, so for public projects something else has to be used for hosting.
+## The stack
 
-## Verification
+| | |
+|---|---|
+| **Base** | [CachyOS](https://cachyos.org) — Arch Linux, performance-optimized |
+| **Filesystem** | [OpenZFS](https://openzfs.org) — snapshots, compression, no fuss |
+| **Bootloader** | [ZFSBootMenu](https://zfsbootmenu.org) — pick a snapshot right at boot |
+| **Desktop** | [Hyprland](https://hyprland.org) via [ML4W](https://github.com/mylinuxforwork/dotfiles) |
+| **Dotfiles** | [richknowles/.dotfiles](https://github.com/richknowles/.dotfiles) — Fish, Waybar, Kitty, the works |
+| **Installer** | Custom `dialog` TUI — boots straight into it, zero fuss |
 
-These images are signed with [Sigstore](https://www.sigstore.dev/)'s [cosign](https://github.com/sigstore/cosign). You can verify the signature by downloading the `cosign.pub` file from this repo and running the following command:
+---
+
+## Installer
+
+Boot the ISO. The installer comes up automatically. Answer six questions and walk away.
+
+<div align="center">
+<img src="assets/tui-demo.svg" alt="madOS TUI installer walkthrough" width="720"/>
+</div>
+
+**What it asks:**
+- Which disk to use (shows model + size, you just pick)
+- Hostname, username, passwords
+- Timezone
+- Your dotfiles repo URL *(pre-filled — change it to yours or leave it)*
+- GitHub token *(only if your dotfiles are private — leave blank otherwise)*
+
+**What it does next, without further input:**
+1. GPT partition table — 512 MB EFI, rest goes to ZFS
+2. ZFS pool + datasets (system, home, logs, cache — all separate)
+3. CachyOS base install via `pacstrap`
+4. ZFSBootMenu as the EFI bootloader
+5. Clones dotfiles → runs `install.sh` → runs `scripts/install-packages.sh`
+6. Installs ML4W Hyprland from AUR
+7. Takes the first snapshot (`baseline-ml4w`)
+8. Reboots
+
+First boot drops you into ZFSBootMenu, then SDDM, then ML4W Welcome to finish the Hyprland config.
+
+---
+
+## How rollback works
+
+```
+zroot/
+├── ROOT/arch        ← everything pacman touches. snapshotted before updates.
+├── data/home        ← your files. survives any root rollback.
+└── var/log          ← logs
+    var/cache        ← package cache (not snapshotted)
+```
 
 ```bash
-cosign verify --key cosign.pub ghcr.io/richknowles/mados
+# Step 1 — before you update anything:
+sudo zfs snapshot zroot/ROOT/arch@before-$(date +%Y%m%d)
+
+# Step 2 — update as normal:
+sudo pacman -Syu
+
+# Step 3 — if it breaks, just reboot.
+# ZFSBootMenu lists your snapshots. Arrow key, Enter. Done.
+```
+
+No extra tooling. No container runtime. No learning curve. It's just ZFS.
+
+---
+
+## Get the ISO
+
+**Latest build** — [GitHub Actions → most recent workflow run → Artifacts](https://github.com/richknowles/madOS/actions/workflows/build.yml)
+
+**Releases** — tagged commits publish to [Releases](https://github.com/richknowles/madOS/releases) automatically.
+
+```bash
+# Flash to USB (replace /dev/sdX with your drive):
+dd if=madOS-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
+```
+
+---
+
+## Build it yourself
+
+Needs Arch Linux (or CachyOS) with `archiso` installed.
+
+```bash
+git clone https://github.com/richknowles/madOS
+cd madOS
+
+# Defaults are in config/defaults.conf
+# Override any of them by copying to the live image root:
+cp config/defaults.conf archiso/airootfs/root/config.conf
+
+sudo mkarchiso -v -w /tmp/work -o /tmp/out archiso/
+```
+
+The GitHub Actions workflow does the same thing in an Arch container — builds on every push to `main`, weekly on Sundays, and on demand. Artifacts stick around for 14 days.
+
+---
+
+## What's in the repo
+
+```
+madOS/
+├── archiso/
+│   ├── profiledef.sh
+│   ├── packages.x86_64          # live ISO packages
+│   ├── pacman.conf               # CachyOS repos included
+│   └── airootfs/root/
+│       ├── install.sh            # the installer
+│       ├── zfs-setup.sh          # partitioning + pool + datasets
+│       └── ml4w-setup.sh         # dotfiles + ML4W
+├── assets/
+│   ├── madOS-CD-Logo.png         # ← place your PNG here
+│   └── tui-demo.svg
+├── config/
+│   └── defaults.conf             # dotfiles URL, hostname, etc.
+└── .github/workflows/
+    └── build.yml
 ```

@@ -1,0 +1,15 @@
+
+  ███╗   ███╗ █████╗ ██████╗  ██████╗ ███████╗
+  ████╗ ████║██╔══██╗██╔══██╗██╔═══██╗██╔════╝
+  ██╔████╔██║███████║██║  ██║██║   ██║███████╗
+  ██║╚██╔╝██║██╔══██║██║  ██║██║   ██║╚════██║
+  ██║ ╚═╝ ██║██║  ██║██████╔╝╚██████╔╝███████║
+  ╚═╝     ╚═╝╚═╝  ╚═╝╚═════╝  ╚═════╝ ╚══════╝
+
+  Immutable CachyOS · ZFS Boot Environments · ML4W Hyprland
+
+  The installer should launch automatically on tty1.
+  If it doesn't, run:  /root/install.sh
+
+  To manually partition or explore:  lsblk / fdisk / parted
+

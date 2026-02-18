@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 440" width="760" height="440" font-family="'JetBrains Mono','Cascadia Code','Fira Code',monospace" font-size="13">
+  <defs>
+    <style>
+      .win-title { fill: #c8c8c8; font-weight: bold; font-size: 12px; }
+      .dialog-border { fill: none; stroke: #6a9fb5; stroke-width: 1.5; }
+      .dialog-title-bar { fill: #2a5f8f; }
+      .dialog-title-text { fill: #ffffff; font-weight: bold; font-size: 13px; }
+      .dialog-bg { fill: #1a3a5c; }
+      .dialog-text { fill: #d4e8f8; font-size: 12.5px; }
+      .dialog-warn { fill: #f4c242; font-weight: bold; font-size: 12.5px; }
+      .btn { fill: #5588aa; rx: 3; }
+      .btn-text { fill: #ffffff; font-weight: bold; font-size: 12px; }
+      .btn-active { fill: #a8d4f0; }
+      .btn-active-text { fill: #0a1a2e; font-weight: bold; font-size: 12px; }
+      .menu-item { fill: #d4e8f8; font-size: 12.5px; }
+      .menu-selected { fill: #0a1a2e; font-weight: bold; font-size: 12.5px; }
+      .menu-sel-bg { fill: #a8d4f0; }
+      .comment { fill: #6a9fb5; font-size: 12px; font-style: italic; }
+      .prompt { fill: #50c878; font-size: 13px; }
+      .cursor { fill: #e8e8e8; opacity: 0.9; }
+    </style>
+
+    <!-- fade in keyframe -->
+    <animate id="a0" />
+  </defs>
+
+  <!-- ── Terminal window chrome ── -->
+  <rect width="760" height="440" rx="10" fill="#0d1117"/>
+  <!-- traffic lights -->
+  <circle cx="22" cy="18" r="6" fill="#ff5f57"/>
+  <circle cx="42" cy="18" r="6" fill="#febc2e"/>
+  <circle cx="62" cy="18" r="6" fill="#28c840"/>
+  <!-- title bar text -->
+  <text x="380" y="22" text-anchor="middle" class="win-title">madOS Installer</text>
+  <!-- separator line -->
+  <line x1="0" y1="34" x2="760" y2="34" stroke="#2d333b" stroke-width="1"/>
+
+  <!-- ── Terminal background ── -->
+  <rect x="0" y="34" width="760" height="406" fill="#0d1117"/>
+
+  <!-- ── Outer dialog: backtitle bar ── -->
+  <rect x="20" y="44" width="720" height="16" fill="#1a3a5c"/>
+  <text x="28" y="56" class="dialog-text" font-size="11.5" fill="#88bbdd">madOS Installer — Immutable CachyOS + ZFS</text>
+
+  <!-- ============================================================
+       SCREEN 1 — Welcome (fades out after 3s)
+  ============================================================ -->
+  <g opacity="1">
+    <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.28;0.35;1" dur="9s" repeatCount="indefinite"/>
+
+    <!-- dialog box -->
+    <rect x="80" y="70" width="600" height="300" class="dialog-bg" rx="2"/>
+    <rect x="80" y="70" width="600" height="300" class="dialog-border" rx="2"/>
+    <!-- title bar -->
+    <rect x="80" y="70" width="600" height="22" class="dialog-title-bar" rx="2"/>
+    <rect x="80" y="82" width="600" height="10" class="dialog-title-bar"/>
+    <text x="380" y="86" text-anchor="middle" class="dialog-title-text">Welcome to madOS</text>
+
+    <!-- body text -->
+    <text x="110" y="118" class="dialog-text" font-weight="bold" fill="#a8d4f0" font-size="14">madOS — Immutable CachyOS with ZFS + ML4W Hyprland</text>
+
+    <text x="110" y="148" class="dialog-text">This installer will:</text>
+    <text x="126" y="168" class="dialog-text">•  Partition your disk with a ZFS pool (zroot)</text>
+    <text x="126" y="186" class="dialog-text">•  Install CachyOS base system with ZFS boot environments</text>
+    <text x="126" y="204" class="dialog-text">•  Configure ZFSBootMenu for snapshot-based rollback</text>
+    <text x="126" y="222" class="dialog-text">•  Clone your dotfiles and run the ML4W Hyprland installer</text>
+
+    <text x="110" y="252" class="dialog-text" font-weight="bold" fill="#a8d4f0">Rollback workflow:</text>
+    <text x="126" y="270" class="dialog-text">Before any update → take a ZFS snapshot</text>
+    <text x="126" y="288" class="dialog-text">If something breaks → reboot, pick the snapshot in ZFSBootMenu</text>
+
+    <!-- OK button -->
+    <rect x="332" y="344" width="96" height="22" class="btn-active" rx="3"/>
+    <text x="380" y="360" text-anchor="middle" class="btn-active-text">OK</text>
+  </g>
+
+  <!-- ============================================================
+       SCREEN 2 — Disk selection (visible 3s–6s)
+  ============================================================ -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.32;0.38;0.62;0.68;1" dur="9s" repeatCount="indefinite"/>
+
+    <rect x="80" y="70" width="600" height="310" class="dialog-bg" rx="2"/>
+    <rect x="80" y="70" width="600" height="310" class="dialog-border" rx="2"/>
+    <rect x="80" y="70" width="600" height="22" class="dialog-title-bar" rx="2"/>
+    <rect x="80" y="82" width="600" height="10" class="dialog-title-bar"/>
+    <text x="380" y="86" text-anchor="middle" class="dialog-title-text">Select Target Disk</text>
+
+    <text x="110" y="116" class="dialog-warn">WARNING: All data on the selected disk will be erased.</text>
+    <text x="110" y="136" class="dialog-text">Available disks:</text>
+
+    <!-- menu box -->
+    <rect x="100" y="148" width="560" height="140" fill="#0d2035" rx="2"/>
+    <rect x="100" y="148" width="560" height="140" stroke="#4a7a9b" stroke-width="1" fill="none" rx="2"/>
+
+    <!-- selected item -->
+    <rect x="102" y="150" width="556" height="22" class="menu-sel-bg" rx="1"/>
+    <text x="116" y="166" class="menu-selected">/dev/nvme0n1   "1TB  WD Black SN850X NVMe"</text>
+
+    <!-- other items -->
+    <text x="116" y="190" class="menu-item">/dev/sda       "500G Samsung 870 EVO SSD "</text>
+    <text x="116" y="212" class="menu-item">/dev/sdb       "2TB  Seagate BarraCuda   "</text>
+    <text x="116" y="234" class="menu-item">/dev/sdc       "64G  USB Flash Drive     "</text>
+    <text x="116" y="256" fill="#4a7a9b" font-size="11">/dev/nvme0n1 ▲ selected</text>
+
+    <!-- buttons -->
+    <rect x="266" y="320" width="96" height="22" class="btn-active" rx="3"/>
+    <text x="314" y="336" text-anchor="middle" class="btn-active-text">OK</text>
+    <rect x="382" y="320" width="96" height="22" class="btn" rx="3"/>
+    <text x="430" y="336" text-anchor="middle" class="btn-text">Cancel</text>
+  </g>
+
+  <!-- ============================================================
+       SCREEN 3 — Confirm / summary (visible 6s–9s)
+  ============================================================ -->
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.65;0.72;1" dur="9s" repeatCount="indefinite"/>
+
+    <rect x="80" y="70" width="600" height="320" class="dialog-bg" rx="2"/>
+    <rect x="80" y="70" width="600" height="320" class="dialog-border" rx="2"/>
+    <rect x="80" y="70" width="600" height="22" class="dialog-title-bar" rx="2"/>
+    <rect x="80" y="82" width="600" height="10" class="dialog-title-bar"/>
+    <text x="380" y="86" text-anchor="middle" class="dialog-title-text">Confirm Installation</text>
+
+    <text x="110" y="118" class="dialog-text">Review your configuration:</text>
+
+    <!-- config table -->
+    <text x="126" y="145" class="dialog-text" fill="#88bbdd" font-weight="bold">Disk:       </text>
+    <text x="230" y="145" class="dialog-text">/dev/nvme0n1</text>
+    <text x="126" y="165" class="dialog-text" fill="#88bbdd" font-weight="bold">Pool:       </text>
+    <text x="230" y="165" class="dialog-text">zroot</text>
+    <text x="126" y="185" class="dialog-text" fill="#88bbdd" font-weight="bold">Hostname:   </text>
+    <text x="230" y="185" class="dialog-text">madOS</text>
+    <text x="126" y="205" class="dialog-text" fill="#88bbdd" font-weight="bold">Username:   </text>
+    <text x="230" y="205" class="dialog-text">rich</text>
+    <text x="126" y="225" class="dialog-text" fill="#88bbdd" font-weight="bold">Timezone:   </text>
+    <text x="230" y="225" class="dialog-text">America/New_York</text>
+    <text x="126" y="245" class="dialog-text" fill="#88bbdd" font-weight="bold">Dotfiles:   </text>
+    <text x="230" y="245" class="dialog-text">github.com/richknowles/.dotfiles</text>
+    <text x="126" y="265" class="dialog-text" fill="#88bbdd" font-weight="bold">Token:      </text>
+    <text x="230" y="265" class="dialog-text" fill="#50c878">(public repo)</text>
+
+    <text x="110" y="295" class="dialog-warn">WARNING: /dev/nvme0n1 will be completely erased!</text>
+
+    <text x="110" y="320" class="dialog-text">Proceed with installation?</text>
+
+    <!-- yes / no -->
+    <rect x="252" y="352" width="100" height="22" class="btn-active" rx="3"/>
+    <text x="302" y="368" text-anchor="middle" class="btn-active-text">Yes</text>
+    <rect x="376" y="352" width="100" height="22" class="btn" rx="3"/>
+    <text x="426" y="368" text-anchor="middle" class="btn-text">No</text>
+  </g>
+
+  <!-- ── bottom status bar ── -->
+  <rect x="0" y="418" width="760" height="22" fill="#0d1a2e"/>
+  <text x="20" y="432" class="comment">  TAB / arrow keys to navigate   SPACE to select   ENTER to confirm</text>
+</svg>
