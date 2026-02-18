@@ -1,0 +1,18 @@
+[Unit]
+Description=madOS Interactive Installer
+After=network.target
+ConditionPathExists=!/etc/machine-id
+
+[Service]
+Type=simple
+ExecStart=/root/install.sh
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

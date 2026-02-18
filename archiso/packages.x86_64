@@ -1,0 +1,132 @@
+# ── Base system ────────────────────────────────────────────────────────────────
+base
+base-devel
+linux-cachyos
+linux-cachyos-headers
+linux-firmware
+mkinitcpio
+
+# ── ZFS ────────────────────────────────────────────────────────────────────────
+zfs-cachyos
+zfs-utils
+
+# ── ZFSBootMenu (boot environment manager) ─────────────────────────────────────
+# Installed manually in installer; listed here for live-env reference tooling
+# zfsbootmenu is AUR — handled in zfs-setup.sh via yay
+
+# ── Bootloader ─────────────────────────────────────────────────────────────────
+grub
+efibootmgr
+os-prober
+dosfstools
+
+# ── Network ────────────────────────────────────────────────────────────────────
+networkmanager
+nm-connection-editor
+network-manager-applet
+iwd
+dhcpcd
+
+# ── Partitioning ───────────────────────────────────────────────────────────────
+parted
+gptfdisk
+util-linux
+
+# ── Arch install tools ─────────────────────────────────────────────────────────
+arch-install-scripts
+
+# ── TUI installer deps ─────────────────────────────────────────────────────────
+dialog
+libnewt
+bash
+
+# ── AUR helper (for ZFSBootMenu + ML4W) ───────────────────────────────────────
+git
+yay
+
+# ── Wayland / compositor ───────────────────────────────────────────────────────
+hyprland
+hyprpaper
+hyprlock
+hypridle
+xdg-desktop-portal-hyprland
+xdg-desktop-portal-gtk
+xwayland
+wayland-protocols
+
+# ── Status bar & widgets ───────────────────────────────────────────────────────
+waybar
+rofi-wayland
+dunst
+swww
+nwg-look
+
+# ── Terminal ───────────────────────────────────────────────────────────────────
+kitty
+alacritty
+
+# ── Screenshots / clipboard ────────────────────────────────────────────────────
+grim
+slurp
+wl-clipboard
+swappy
+
+# ── Display manager ────────────────────────────────────────────────────────────
+sddm
+
+# ── Audio ──────────────────────────────────────────────────────────────────────
+pipewire
+pipewire-alsa
+pipewire-pulse
+pipewire-jack
+wireplumber
+pavucontrol
+
+# ── File manager ───────────────────────────────────────────────────────────────
+thunar
+thunar-volman
+gvfs
+
+# ── Fonts ──────────────────────────────────────────────────────────────────────
+noto-fonts
+noto-fonts-emoji
+ttf-jetbrains-mono-nerd
+ttf-font-awesome
+
+# ── Shell ──────────────────────────────────────────────────────────────────────
+zsh
+zsh-completions
+starship
+fish
+
+# ── Editors ────────────────────────────────────────────────────────────────────
+neovim
+nano
+
+# ── System utilities ───────────────────────────────────────────────────────────
+htop
+fastfetch
+wget
+curl
+rsync
+openssh
+sudo
+polkit
+polkit-kde-agent
+
+# ── Python (ML4W installer dependency) ────────────────────────────────────────
+python
+python-pip
+
+# ── Mesa / Vulkan ──────────────────────────────────────────────────────────────
+mesa
+vulkan-icd-loader
+vulkan-intel
+vulkan-radeon
+libva
+libva-intel-driver
+libva-mesa-driver
+
+# ── Bluetooth ──────────────────────────────────────────────────────────────────
+bluez
+bluez-utils
