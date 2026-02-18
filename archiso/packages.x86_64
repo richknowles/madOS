@@ -33,6 +33,7 @@ dhcpcd
 parted
 gptfdisk
 util-linux
+iptables-nft
 
 # ── Arch install tools ─────────────────────────────────────────────────────────
 arch-install-scripts
@@ -133,7 +134,8 @@ intel-media-driver
 linux-cachyos-nvidia-open
 nvidia-utils
 nvidia-settings
-lib32-nvidia-utils
+# lib32-nvidia-utils omitted: requires lib32-libglvnd from [multilib] (not in pacman.conf);
+# not needed in live ISO — install post-boot if running 32-bit apps / Wine / Steam
 egl-wayland
 opencl-nvidia
 
