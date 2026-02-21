@@ -22,6 +22,9 @@ GITHUB_TOKEN=""
 
 [[ -f /root/config.conf ]] && source /root/config.conf
 
+# OEM boot entry passes madOS.oem=1 on the kernel cmdline — honour it
+grep -q 'madOS\.oem' /proc/cmdline 2>/dev/null && UNATTENDED=1
+
 # ── Colours ───────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
@@ -41,8 +44,18 @@ d_input()   { eval "$DIALOG" --title "'$1'" --inputbox "'$2'" $HEIGHT $WIDTH "'$
 d_password(){ eval "$DIALOG" --title "'$1'" --passwordbox "'$2'" $HEIGHT $WIDTH 2>&1 >/dev/tty; }
 d_menu()    { eval "$DIALOG" --title "'$1'" --menu "'$2'" $HEIGHT $WIDTH 10 $3 2>&1 >/dev/tty; }
 
+# ── Unattended helper ─────────────────────────────────────────────────────────
+_config_is_complete() {
+    [[ -n "${TARGET_DISK:-}"   ]] &&
+    [[ -n "${HOSTNAME:-}"      ]] &&
+    [[ -n "${USERNAME:-}"      ]] &&
+    [[ -n "${USER_PASSWORD:-}" ]] &&
+    [[ -n "${TIMEZONE:-}"      ]]
+}
+
 # ── Welcome ───────────────────────────────────────────────────────────────────
 welcome() {
+    [[ "${UNATTENDED:-0}" == "1" ]] && { log "madOS unattended install — starting."; return; }
     dialog --colors --backtitle "madOS Installer" \
         --title "Welcome to madOS" \
         --msgbox "\n\
@@ -61,86 +74,126 @@ Press OK to begin." \
 
 # ── Collect configuration ─────────────────────────────────────────────────────
 collect_config() {
-    # Disk selection
-    local disk_list
-    disk_list=$(lsblk -dpno NAME,SIZE,MODEL | grep -E "^/dev/(sd|nvme|vd)" \
-        | awk '{printf "%s \"%s %s\" ", $1, $2, $3}')
-    [[ -z "$disk_list" ]] && error "No block devices found."
+    # Fully unattended: all required vars already set in config.conf
+    if [[ "${UNATTENDED:-0}" == "1" ]] && _config_is_complete; then
+        log "Unattended mode — all values loaded from config.conf."
+        return 0
+    fi
 
-    TARGET_DISK=$(dialog --colors --backtitle "madOS Installer" \
-        --title "Select Target Disk" \
-        --menu "\nWARNING: All data on the selected disk will be erased.\n\nAvailable disks:" \
-        $HEIGHT $WIDTH 8 $disk_list 2>&1 >/dev/tty) || exit 1
+    # Disk selection — skip if pre-set
+    if [[ -z "${TARGET_DISK:-}" ]]; then
+        local disk_list
+        disk_list=$(lsblk -dpno NAME,SIZE,MODEL | grep -E "^/dev/(sd|nvme|vd)" \
+            | awk '{printf "%s \"%s %s\" ", $1, $2, $3}')
+        [[ -z "$disk_list" ]] && error "No block devices found."
+        TARGET_DISK=$(dialog --colors --backtitle "madOS Installer" \
+            --title "Select Target Disk" \
+            --menu "\nWARNING: All data on the selected disk will be erased.\n\nAvailable disks:" \
+            $HEIGHT $WIDTH 8 $disk_list 2>&1 >/dev/tty) || exit 1
+    fi
 
-    # Hostname
-    HOSTNAME=$(dialog --colors --backtitle "madOS Installer" \
-        --title "Hostname" --inputbox "\nEnter a hostname for this machine:" \
-        $HEIGHT $WIDTH "$DEFAULT_HOSTNAME" 2>&1 >/dev/tty) || exit 1
-    [[ -z "$HOSTNAME" ]] && HOSTNAME="$DEFAULT_HOSTNAME"
+    # Hostname — skip if pre-set
+    if [[ -z "${HOSTNAME:-}" ]]; then
+        HOSTNAME=$(dialog --colors --backtitle "madOS Installer" \
+            --title "Hostname" --inputbox "\nEnter a hostname for this machine:" \
+            $HEIGHT $WIDTH "$DEFAULT_HOSTNAME" 2>&1 >/dev/tty) || exit 1
+        [[ -z "$HOSTNAME" ]] && HOSTNAME="$DEFAULT_HOSTNAME"
+    fi
 
-    # Username
-    USERNAME=$(dialog --colors --backtitle "madOS Installer" \
-        --title "Primary User" --inputbox "\nEnter your username:" \
-        $HEIGHT $WIDTH "$DEFAULT_USERNAME" 2>&1 >/dev/tty) || exit 1
-    [[ -z "$USERNAME" ]] && USERNAME="$DEFAULT_USERNAME"
+    # Username — skip if pre-set
+    if [[ -z "${USERNAME:-}" ]]; then
+        USERNAME=$(dialog --colors --backtitle "madOS Installer" \
+            --title "Primary User" --inputbox "\nEnter your username:" \
+            $HEIGHT $WIDTH "$DEFAULT_USERNAME" 2>&1 >/dev/tty) || exit 1
+        [[ -z "$USERNAME" ]] && USERNAME="$DEFAULT_USERNAME"
+    fi
 
-    # User password
-    local pass1 pass2
-    while true; do
-        pass1=$(dialog --colors --backtitle "madOS Installer" \
-            --title "User Password" --passwordbox "\nPassword for ${USERNAME}:" \
-            $HEIGHT $WIDTH 2>&1 >/dev/tty) || exit 1
-        pass2=$(dialog --colors --backtitle "madOS Installer" \
-            --title "User Password" --passwordbox "\nConfirm password:" \
-            $HEIGHT $WIDTH 2>&1 >/dev/tty) || exit 1
-        if [[ "$pass1" == "$pass2" ]]; then
-            USER_PASSWORD="$pass1"; break
-        fi
-        dialog --msgbox "Passwords do not match. Try again." 8 40
-    done
+    # User password — skip if pre-set
+    if [[ -z "${USER_PASSWORD:-}" ]]; then
+        local pass1 pass2
+        while true; do
+            pass1=$(dialog --colors --backtitle "madOS Installer" \
+                --title "User Password" --passwordbox "\nPassword for ${USERNAME}:" \
+                $HEIGHT $WIDTH 2>&1 >/dev/tty) || exit 1
+            pass2=$(dialog --colors --backtitle "madOS Installer" \
+                --title "User Password" --passwordbox "\nConfirm password:" \
+                $HEIGHT $WIDTH 2>&1 >/dev/tty) || exit 1
+            if [[ "$pass1" == "$pass2" ]]; then
+                USER_PASSWORD="$pass1"; break
+            fi
+            dialog --msgbox "Passwords do not match. Try again." 8 40
+        done
+    fi
 
-    # Root password
-    while true; do
-        pass1=$(dialog --colors --backtitle "madOS Installer" \
-            --title "Root Password" --passwordbox "\nRoot password (leave blank to disable root login):" \
-            $HEIGHT $WIDTH 2>&1 >/dev/tty) || exit 1
-        pass2=$(dialog --colors --backtitle "madOS Installer" \
-            --title "Root Password" --passwordbox "\nConfirm root password:" \
-            $HEIGHT $WIDTH 2>&1 >/dev/tty) || exit 1
-        if [[ "$pass1" == "$pass2" ]]; then
-            ROOT_PASSWORD="$pass1"; break
-        fi
-        dialog --msgbox "Passwords do not match. Try again." 8 40
-    done
+    # Root password — skip if pre-set (empty string = disabled, that's valid)
+    if [[ -z "${ROOT_PASSWORD+x}" ]]; then
+        local pass1 pass2
+        while true; do
+            pass1=$(dialog --colors --backtitle "madOS Installer" \
+                --title "Root Password" --passwordbox "\nRoot password (leave blank to disable root login):" \
+                $HEIGHT $WIDTH 2>&1 >/dev/tty) || exit 1
+            pass2=$(dialog --colors --backtitle "madOS Installer" \
+                --title "Root Password" --passwordbox "\nConfirm root password:" \
+                $HEIGHT $WIDTH 2>&1 >/dev/tty) || exit 1
+            if [[ "$pass1" == "$pass2" ]]; then
+                ROOT_PASSWORD="$pass1"; break
+            fi
+            dialog --msgbox "Passwords do not match. Try again." 8 40
+        done
+    fi
 
-    # Timezone
-    TIMEZONE=$(dialog --colors --backtitle "madOS Installer" \
-        --title "Timezone" --inputbox "\nEnter your timezone (e.g. America/New_York, Europe/London):" \
-        $HEIGHT $WIDTH "$DEFAULT_TIMEZONE" 2>&1 >/dev/tty) || exit 1
-    [[ -z "$TIMEZONE" ]] && TIMEZONE="$DEFAULT_TIMEZONE"
+    # Timezone — skip if pre-set
+    if [[ -z "${TIMEZONE:-}" ]]; then
+        TIMEZONE=$(dialog --colors --backtitle "madOS Installer" \
+            --title "Timezone" --inputbox "\nEnter your timezone (e.g. America/New_York, Europe/London):" \
+            $HEIGHT $WIDTH "$DEFAULT_TIMEZONE" 2>&1 >/dev/tty) || exit 1
+        [[ -z "$TIMEZONE" ]] && TIMEZONE="$DEFAULT_TIMEZONE"
+    fi
 
-    # Dotfiles URL
-    DOTFILES_URL=$(dialog --colors --backtitle "madOS Installer" \
-        --title "Dotfiles Repository" \
-        --inputbox "\nDotfiles repo URL:\n(pre-filled with your repo — change if needed)" \
-        $HEIGHT $WIDTH "$DOTFILES_URL" 2>&1 >/dev/tty) || exit 1
+    # Dotfiles URL — skip if pre-set
+    if [[ -z "${DOTFILES_URL:-}" ]]; then
+        DOTFILES_URL=$(dialog --colors --backtitle "madOS Installer" \
+            --title "Dotfiles Repository" \
+            --inputbox "\nDotfiles repo URL:\n(pre-filled with your repo — change if needed)" \
+            $HEIGHT $WIDTH "$DOTFILES_URL" 2>&1 >/dev/tty) || exit 1
+    fi
 
-    # GitHub token for private repos
-    GITHUB_TOKEN=$(dialog --colors --backtitle "madOS Installer" \
-        --title "GitHub Token (optional)" \
-        --passwordbox "\nIf your dotfiles repo is \Zbprivate\Zn, enter a GitHub personal access token.\nLeave blank for public repos." \
-        $HEIGHT $WIDTH 2>&1 >/dev/tty) || true
+    # GitHub token — skip if pre-set (empty = public repo, that's valid)
+    if [[ -z "${GITHUB_TOKEN+x}" ]]; then
+        GITHUB_TOKEN=$(dialog --colors --backtitle "madOS Installer" \
+            --title "GitHub Token (optional)" \
+            --passwordbox "\nIf your dotfiles repo is \Zbprivate\Zn, enter a GitHub personal access token.\nLeave blank for public repos." \
+            $HEIGHT $WIDTH 2>&1 >/dev/tty) || true
+    fi
 
-    # ZFS pool name
-    ZFS_POOL_NAME=$(dialog --colors --backtitle "madOS Installer" \
-        --title "ZFS Pool Name" \
-        --inputbox "\nName for the ZFS root pool:" \
-        $HEIGHT $WIDTH "$ZFS_POOL_NAME" 2>&1 >/dev/tty) || exit 1
-    [[ -z "$ZFS_POOL_NAME" ]] && ZFS_POOL_NAME="zroot"
+    # ZFS pool name — skip if pre-set
+    if [[ -z "${ZFS_POOL_NAME:-}" ]]; then
+        ZFS_POOL_NAME=$(dialog --colors --backtitle "madOS Installer" \
+            --title "ZFS Pool Name" \
+            --inputbox "\nName for the ZFS root pool:" \
+            $HEIGHT $WIDTH "zroot" 2>&1 >/dev/tty) || exit 1
+        [[ -z "$ZFS_POOL_NAME" ]] && ZFS_POOL_NAME="zroot"
+    fi
 }
 
 # ── Confirmation ──────────────────────────────────────────────────────────────
 confirm_config() {
+    if [[ "${UNATTENDED:-0}" == "1" ]]; then
+        log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        log "  Unattended install — configuration summary:"
+        log "  Disk:      ${TARGET_DISK}  *** WILL BE ERASED ***"
+        log "  Pool:      ${ZFS_POOL_NAME}"
+        log "  Hostname:  ${HOSTNAME}"
+        log "  Username:  ${USERNAME}"
+        log "  Timezone:  ${TIMEZONE}"
+        log "  Dotfiles:  ${DOTFILES_URL}"
+        log "  Token:     ${GITHUB_TOKEN:+(set)}"
+        log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        log "Press Ctrl+C within 10 seconds to abort."
+        sleep 10
+        return 0
+    fi
+
     dialog --colors --backtitle "madOS Installer" \
         --title "Confirm Installation" \
         --yesno "\nReview your configuration:\n\n\
