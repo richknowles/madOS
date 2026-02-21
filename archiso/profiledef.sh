@@ -22,4 +22,5 @@ file_permissions=(
     ["/root/install.sh"]="0:0:755"
     ["/root/zfs-setup.sh"]="0:0:755"
     ["/root/ml4w-setup.sh"]="0:0:755"
+    ["/root/madOS-logo.png"]="0:0:644"
 )
