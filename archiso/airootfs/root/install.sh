@@ -424,6 +424,9 @@ main() {
         install_grub_fallback
     fi
 
+    # Baseline snapshot — rollback target before any user changes
+    zfs_initial_snapshot "$ZFS_POOL_NAME"
+
     show_summary
 }
 

@@ -2,6 +2,7 @@
 Description=madOS Interactive Installer
 After=network.target
 ConditionKernelCommandLine=archisobasedir
+Conflicts=getty@tty1.service
 
 [Service]
 Type=simple

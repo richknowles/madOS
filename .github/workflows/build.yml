@@ -2,7 +2,7 @@ name: Build madOS ISO
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, "claude/**"]
     paths-ignore:
       - "**.md"
       - "docs/**"
