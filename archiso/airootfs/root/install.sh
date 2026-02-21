@@ -292,6 +292,10 @@ systemctl enable zfs-zed
 printf '\n[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n\n[cachyos-v3]\nInclude = /etc/pacman.d/cachyos-v3-mirrorlist\n' >> /etc/pacman.conf
 pacman-key --populate cachyos
 
+# ZFS hostid — must exist before mkinitcpio so the zfs hook embeds it;
+# without this ZFS generates a random hostid on every boot → pool import fails
+zgenhostid
+
 # mkinitcpio with ZFS hook
 sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf block keyboard zfs filesystems)/' /etc/mkinitcpio.conf
 mkinitcpio -P

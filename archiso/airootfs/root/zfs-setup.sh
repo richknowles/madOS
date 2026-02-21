@@ -68,17 +68,20 @@ _create_pool() {
     # Modprobe ZFS
     modprobe zfs || true
 
+    mkdir -p /mnt/etc/zfs
+
     zpool create -f \
-        -o ashift=12                   \
-        -o autotrim=on                 \
-        -O acltype=posixacl            \
-        -O compression=zstd            \
-        -O dnodesize=auto              \
-        -O normalization=formD         \
-        -O relatime=on                 \
-        -O xattr=sa                    \
-        -O mountpoint=none             \
-        -R /mnt                        \
+        -o ashift=12                                  \
+        -o autotrim=on                                \
+        -o cachefile=/mnt/etc/zfs/zpool.cache         \
+        -O acltype=posixacl                           \
+        -O compression=zstd                           \
+        -O dnodesize=auto                             \
+        -O normalization=formD                        \
+        -O relatime=on                                \
+        -O xattr=sa                                   \
+        -O mountpoint=none                            \
+        -R /mnt                                       \
         "$pool" "$ZFS_PARTITION"
 
     success "ZFS pool '${pool}' created."
