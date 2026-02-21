@@ -34,6 +34,17 @@ success() { echo -e "${GREEN}[  OK  ]${RESET} $*"; }
 warn()    { echo -e "${YELLOW}[ WARN ]${RESET} $*"; }
 error()   { echo -e "${RED}[ERROR ]${RESET} $*"; exit 1; }
 
+# ── Splash screen ─────────────────────────────────────────────────────────────
+show_splash() {
+    local logo="/root/madOS-logo.png"
+    if command -v chafa &>/dev/null && [[ -f "$logo" ]]; then
+        clear
+        chafa --colors 16 --symbols block+half --size 60x20 "$logo"
+        echo -e "\n  ${BOLD}${CYAN}madOS${RESET}  —  Immutable CachyOS · ZFS · ML4W Hyprland\n"
+        sleep 2
+    fi
+}
+
 # ── Dialog helpers ────────────────────────────────────────────────────────────
 HEIGHT=20; WIDTH=70
 DIALOG="dialog --colors --backtitle 'madOS Installer — Immutable CachyOS + ZFS'"
@@ -385,7 +396,7 @@ Press OK to reboot." \
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 main() {
-    clear
+    show_splash
     welcome
     collect_config
     confirm_config

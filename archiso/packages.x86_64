@@ -42,6 +42,7 @@ arch-install-scripts
 dialog
 libnewt
 bash
+chafa
 
 # ── AUR helper (for ZFSBootMenu + ML4W) ───────────────────────────────────────
 git
