@@ -276,12 +276,16 @@ echo "${USERNAME}:${USER_PASSWORD}" | chpasswd
 $(if [[ -n "$ROOT_PASSWORD" ]]; then echo "echo 'root:${ROOT_PASSWORD}' | chpasswd"; fi)
 echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
-# SDDM default session
-mkdir -p /etc/sddm.conf.d
-cat > /etc/sddm.conf.d/hyprland.conf <<EOF
-[General]
-Session=hyprland
+# SDDM default session — pre-populate state.conf so Hyprland is
+# pre-selected on first login (SDDM has no config key for this;
+# it reads last-used session from /var/lib/sddm/state.conf)
+mkdir -p /var/lib/sddm
+cat > /var/lib/sddm/state.conf <<EOF
+[Last]
+Session=/usr/share/wayland-sessions/hyprland.desktop
+User=${USERNAME}
 EOF
+chown -R sddm:sddm /var/lib/sddm
 
 # Enable services
 systemctl enable NetworkManager
@@ -359,7 +363,7 @@ install_zfsbootmenu() {
 sudo -u ${USERNAME} bash -c "yay -S --noconfirm zfsbootmenu"
 
 # Explicit ZBM config so generate-zbm output path is deterministic
-mkdir -p /etc/zfsbootmenu /boot/efi/EFI/ZFSBootMenu
+mkdir -p /etc/zfsbootmenu/dracut.conf.d /boot/efi/EFI/ZFSBootMenu
 cat > /etc/zfsbootmenu/config.yaml <<'ZBMCFG'
 Global:
   ManageImages: true
