@@ -1,0 +1,39 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# madOS config.conf — pre-seed for unattended / OEM install
+#
+# Copy this file to /root/config.conf on the live ISO (or bake it in at build
+# time) and set UNATTENDED=1 to skip all dialog prompts entirely.
+#
+# Any variable left unset (or commented out) will still be prompted for
+# interactively — so you can pre-fill just the parts you want.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Set to 1 to skip all prompts and run fully unattended.
+# Requires TARGET_DISK, HOSTNAME, USERNAME, USER_PASSWORD, and TIMEZONE to be set.
+UNATTENDED=0
+
+# ── Disk ──────────────────────────────────────────────────────────────────────
+# Block device to install to. ALL DATA WILL BE ERASED.
+TARGET_DISK=/dev/nvme1n1
+
+# ── ZFS ───────────────────────────────────────────────────────────────────────
+ZFS_POOL_NAME=zroot
+
+# ── System ────────────────────────────────────────────────────────────────────
+HOSTNAME=madOS
+DEFAULT_LOCALE=en_US.UTF-8
+TIMEZONE=America/New_York
+
+# ── User ──────────────────────────────────────────────────────────────────────
+USERNAME=user
+USER_PASSWORD=changeme
+
+# Root password. Leave empty to disable root login (recommended).
+ROOT_PASSWORD=
+
+# ── Dotfiles ──────────────────────────────────────────────────────────────────
+DOTFILES_URL=https://github.com/richknowles/.dotfiles
+DOTFILES_BRANCH=main
+
+# GitHub personal access token — only needed for private dotfiles repos.
+GITHUB_TOKEN=
