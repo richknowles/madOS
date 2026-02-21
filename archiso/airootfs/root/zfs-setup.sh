@@ -41,8 +41,9 @@ _partition_disk() {
         -n 2:0:0     -t 2:BF00 -c 2:"ZFS"         \
         "$disk"
 
-    # Inform kernel of partition table change
+    # Inform kernel of partition table change and wait for udev to settle
     partprobe "$disk"
+    udevadm settle
     sleep 2
 
     # Resolve partition names (handles both /dev/sdX1 and /dev/nvme0n1p1)
@@ -134,14 +135,20 @@ _create_datasets() {
 _mount_datasets() {
     local pool="$1"
 
+    # ROOT/arch has canmount=noauto — must be mounted explicitly
     zfs mount "${pool}/ROOT/arch"
 
     # Create EFI mount point and mount
     mkdir -p /mnt/boot/efi
     mount "$EFI_PARTITION" /mnt/boot/efi
 
-    # Create dirs for other datasets (auto-mounted)
-    mkdir -p /mnt/home /mnt/var/log /mnt/var/cache/pacman
+    # Child datasets have canmount=on but are NOT auto-mounted after
+    # zpool create — they need explicit mounts. /mnt/var must exist
+    # before mounting the nested /var/log and /var/cache datasets.
+    mkdir -p /mnt/var/cache
+    zfs mount "${pool}/data/home"
+    zfs mount "${pool}/var/log"
+    zfs mount "${pool}/var/cache"
 
     success "All datasets mounted at /mnt."
 }
