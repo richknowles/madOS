@@ -84,13 +84,6 @@ yay -S --noconfirm --needed arcstarry-cursors 2>/dev/null \
     || echo "[ML4W] NOTE: ArcStarry cursor not found under known AUR names." \
        "Hyprctl will set it on first login if the theme is installed elsewhere."
 
-# ── Configure SDDM to default to Hyprland ─────────────────────────────────────
-mkdir -p ~/.config/sddm
-cat > ~/.config/sddm/sddm.conf.d/autologin.conf <<EOF
-[Autologin]
-Session=hyprland
-EOF
-
 # ── First-boot ML4W launcher via systemd user unit ────────────────────────────
 # If ml4w-welcome exists, launch it on first Hyprland session
 if command -v ml4w-welcome &>/dev/null || command -v ml4w &>/dev/null; then

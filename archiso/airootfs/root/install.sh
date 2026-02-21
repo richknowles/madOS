@@ -229,7 +229,7 @@ install_base() {
         zfs-dkms zfs-utils \
         cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist \
         networkmanager sudo git yay \
-        grub efibootmgr dosfstools \
+        efibootmgr dosfstools \
         zsh fish starship \
         neovim nano \
         hyprland hyprpaper hyprlock hypridle \
@@ -276,6 +276,17 @@ echo "${USERNAME}:${USER_PASSWORD}" | chpasswd
 $(if [[ -n "$ROOT_PASSWORD" ]]; then echo "echo 'root:${ROOT_PASSWORD}' | chpasswd"; fi)
 echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
 
+# SDDM default session — pre-populate state.conf so Hyprland is
+# pre-selected on first login (SDDM has no config key for this;
+# it reads last-used session from /var/lib/sddm/state.conf)
+mkdir -p /var/lib/sddm
+cat > /var/lib/sddm/state.conf <<EOF
+[Last]
+Session=/usr/share/wayland-sessions/hyprland.desktop
+User=${USERNAME}
+EOF
+chown -R sddm:sddm /var/lib/sddm
+
 # Enable services
 systemctl enable NetworkManager
 systemctl enable sddm
@@ -291,6 +302,10 @@ systemctl enable zfs-zed
 # CachyOS repositories
 printf '\n[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n\n[cachyos-v3]\nInclude = /etc/pacman.d/cachyos-v3-mirrorlist\n' >> /etc/pacman.conf
 pacman-key --populate cachyos
+
+# ZFS hostid — must exist before mkinitcpio so the zfs hook embeds it;
+# without this ZFS generates a random hostid on every boot → pool import fails
+zgenhostid
 
 # mkinitcpio with ZFS hook
 sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf block keyboard zfs filesystems)/' /etc/mkinitcpio.conf
@@ -342,37 +357,56 @@ setup_dotfiles_chroot() {
 # ── ZFSBootMenu ───────────────────────────────────────────────────────────────
 install_zfsbootmenu() {
     log "Installing ZFSBootMenu..."
-    local efi_part="${EFI_PARTITION}"
 
     arch-chroot /mnt bash -euo pipefail <<CHROOT
 # Install ZFSBootMenu via yay (run as user to avoid makepkg root issues)
 sudo -u ${USERNAME} bash -c "yay -S --noconfirm zfsbootmenu"
 
-# Create ZFSBootMenu EFI stub
-mkdir -p /boot/efi/EFI/ZFSBootMenu
+# Explicit ZBM config so generate-zbm output path is deterministic
+mkdir -p /etc/zfsbootmenu/dracut.conf.d /boot/efi/EFI/ZFSBootMenu
+cat > /etc/zfsbootmenu/config.yaml <<'ZBMCFG'
+Global:
+  ManageImages: true
+  BootMountPoint: /boot/efi
+  DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
+Components:
+  Enabled: false
+EFI:
+  ImageDir: /boot/efi/EFI/ZFSBootMenu
+  Versions: false
+  Enabled: true
+Kernel:
+  CommandLine: "ro quiet loglevel=0 nvidia-drm.modeset=1"
+ZBMCFG
+
 generate-zbm
 
-# Add EFI boot entry
+# Find the generated EFI stub — don't hardcode the filename
+efi_stub=\$(find /boot/efi/EFI/ZFSBootMenu -maxdepth 1 \( -name "*.EFI" -o -name "*.efi" \) | head -1)
+[[ -z "\$efi_stub" ]] && { echo "ERROR: generate-zbm produced no EFI file in /boot/efi/EFI/ZFSBootMenu/"; exit 1; }
+
+# Convert to EFI loader path (backslash-separated, relative to ESP root)
+efi_loader="\${efi_stub#/boot/efi}"
+efi_loader="\${efi_loader//\//\\\\}"
+
 efibootmgr --create --disk ${TARGET_DISK} --part 1 \
     --label "ZFSBootMenu" \
-    --loader "\\EFI\\ZFSBootMenu\\vmlinuz-bootmenu.EFI" \
+    --loader "\${efi_loader}" \
     --unicode "ro quiet loglevel=0 zbm.prefer=${ZFS_POOL_NAME} zbm.import_policy=hostid"
 CHROOT
 }
 
-# ── GRUB fallback (if ZFSBootMenu AUR fails) ──────────────────────────────────
+# ── ZFSBootMenu failure handler ───────────────────────────────────────────────
 install_grub_fallback() {
-    warn "ZFSBootMenu install failed — falling back to GRUB with ZFS support."
-    arch-chroot /mnt bash -euo pipefail <<CHROOT
-grub-install --target=x86_64-efi \
-    --efi-directory=/boot/efi \
-    --bootloader-id=GRUB \
-    --recheck
-# Enable ZFS support in GRUB
-echo 'GRUB_CMDLINE_LINUX="zfs.zfs_arc_max=8589934592 nvidia-drm.modeset=1"' >> /etc/default/grub
-echo 'GRUB_PRELOAD_MODULES="zfs part_gpt"' >> /etc/default/grub
-grub-mkconfig -o /boot/grub/grub.cfg
-CHROOT
+    error "ZFSBootMenu failed to install. This system uses ZFSBootMenu as its
+only bootloader — GRUB cannot manage ZFS boot environments.
+
+The base system is installed at /mnt. To recover, reboot into the
+live ISO and run:
+  arch-chroot /mnt
+  sudo -u ${USERNAME} yay -S --noconfirm zfsbootmenu
+  generate-zbm
+  # then re-run efibootmgr manually"
 }
 
 # ── Summary ───────────────────────────────────────────────────────────────────
