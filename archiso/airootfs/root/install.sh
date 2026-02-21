@@ -274,7 +274,8 @@ hwclock --systohc
 useradd -m -G wheel,audio,video,storage,optical -s /bin/zsh "${USERNAME}"
 echo "${USERNAME}:${USER_PASSWORD}" | chpasswd
 $(if [[ -n "$ROOT_PASSWORD" ]]; then echo "echo 'root:${ROOT_PASSWORD}' | chpasswd"; fi)
-echo "%wheel ALL=(ALL:ALL) ALL" >> /etc/sudoers
+echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
+chmod 440 /etc/sudoers.d/wheel
 
 # SDDM default session — pre-populate state.conf so Hyprland is
 # pre-selected on first login (SDDM has no config key for this;
@@ -308,7 +309,7 @@ pacman-key --populate cachyos
 zgenhostid
 
 # mkinitcpio with ZFS hook
-sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf block keyboard zfs filesystems)/' /etc/mkinitcpio.conf
+sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf block keyboard keymap zfs filesystems)/' /etc/mkinitcpio.conf
 mkinitcpio -P
 CHROOT
 }
@@ -319,7 +320,7 @@ configure_nvidia() {
 
     # Tell ZFSBootMenu to pass nvidia-drm.modeset=1 to every boot environment
     zfs set org.zfsbootmenu:commandline="rw quiet loglevel=0 nvidia-drm.modeset=1" \
-        "${ZFS_POOL_NAME}/ROOT/arch" 2>/dev/null || true
+        "${ZFS_POOL_NAME}/ROOT/arch"
 
     arch-chroot /mnt bash -euo pipefail <<CHROOT
 # DRM modesetting — required for Wayland; fbdev=1 keeps TTY output working
@@ -428,6 +429,7 @@ show_summary() {
 Press OK to reboot." \
         $HEIGHT $WIDTH
 
+    zfs umount -a 2>/dev/null || true
     umount -R /mnt 2>/dev/null || true
     zpool export "$ZFS_POOL_NAME" 2>/dev/null || true
     reboot
