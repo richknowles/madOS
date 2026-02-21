@@ -1,0 +1,13 @@
+# mkinitcpio preset for linux-cachyos in the madOS live environment.
+# The preset name MUST be 'archiso' — mkarchiso scans for this preset
+# and uses it to build the initramfs that gets embedded into the ISO.
+# The resulting image path must match the loader entry in:
+#   efiboot/loader/entries/madOS-x86_64.conf  (initrd line)
+
+ALL_config="/etc/mkinitcpio.conf"
+ALL_kver="/boot/vmlinuz-linux-cachyos"
+
+PRESETS=('archiso')
+
+archiso_config="/etc/mkinitcpio.conf"
+archiso_image="/boot/initramfs-linux-cachyos.img"
