@@ -1,7 +1,7 @@
 [Unit]
 Description=madOS Interactive Installer
 After=network.target
-ConditionPathExists=!/etc/machine-id
+ConditionKernelCommandLine=archisobasedir
 
 [Service]
 Type=simple
