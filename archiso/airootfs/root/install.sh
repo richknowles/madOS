@@ -227,6 +227,7 @@ install_base() {
         base base-devel linux-cachyos linux-cachyos-headers linux-firmware \
         linux-cachyos-nvidia-open nvidia-utils nvidia-settings egl-wayland opencl-nvidia \
         zfs-dkms zfs-utils \
+        cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist \
         networkmanager sudo git yay \
         grub efibootmgr dosfstools \
         zsh fish starship \
@@ -286,6 +287,10 @@ systemctl enable zfs-import.target
 systemctl enable zfs-mount
 systemctl enable zfs.target
 systemctl enable zfs-zed
+
+# CachyOS repositories
+printf '\n[cachyos]\nInclude = /etc/pacman.d/cachyos-mirrorlist\n\n[cachyos-v3]\nInclude = /etc/pacman.d/cachyos-v3-mirrorlist\n' >> /etc/pacman.conf
+pacman-key --populate cachyos
 
 # mkinitcpio with ZFS hook
 sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect modconf block keyboard zfs filesystems)/' /etc/mkinitcpio.conf
