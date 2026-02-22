@@ -248,6 +248,19 @@ install_base() {
             $HEIGHT $WIDTH
 }
 
+# ── Write /etc/fstab (EFI only — ZFS self-mounts via systemd services) ────────
+configure_fstab() {
+    local efi_uuid
+    efi_uuid=$(blkid -s UUID -o value "$EFI_PARTITION")
+    [[ -z "$efi_uuid" ]] && { warn "Could not read UUID for $EFI_PARTITION — fstab EFI entry skipped."; return 0; }
+
+    # ZFS datasets are managed by zfs-mount.service; only the ESP needs an entry.
+    printf "# EFI System Partition\nUUID=%s  /boot/efi  vfat  umask=0077  0 2\n" "$efi_uuid" \
+        >> /mnt/etc/fstab
+
+    success "fstab: EFI UUID ${efi_uuid} → /boot/efi"
+}
+
 # ── Configure chroot ──────────────────────────────────────────────────────────
 configure_system() {
     log "Configuring system in chroot..."
@@ -450,6 +463,9 @@ main() {
 
     # Base system
     install_base
+
+    # Write /etc/fstab with correct EFI UUID before chroot config runs
+    configure_fstab
 
     # System configuration in chroot
     configure_system
